@@ -1,2 +1,2 @@
 # rust-runner
-GitHub actions runner with Rust 
+GitHub actions runner with Rust installed
