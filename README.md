@@ -9,11 +9,6 @@ GitHub Actions self-hosted runner image with Rust preinstalled.
 - Toolchain: `stable` with `rustfmt` and `clippy`
 - Build tools: `build-essential`
 
-## Notes
-
-- For reproducibility, consider pinning the base image to a specific tag instead of `latest`.
-- Rust is installed with the minimal profile to keep the image smaller.
-
 ## Build and test locally
 
 ```bash
