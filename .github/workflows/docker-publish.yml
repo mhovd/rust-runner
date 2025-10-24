@@ -45,6 +45,13 @@ jobs:
         with:
           cosign-release: 'v2.2.4'
 
+      # =======================================================
+      # ⬇️ STEP 1: ADD THIS SECTION FOR QEMU ⬇️
+      # =======================================================
+      # Set up QEMU for multi-architecture builds
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
       # https://github.com/docker/setup-buildx-action
@@ -76,6 +83,10 @@ jobs:
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           context: .
+          # =======================================================
+          # ⬇️ STEP 2: ADD THE 'platforms' LINE HERE ⬇️
+          # =======================================================
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -95,4 +106,5 @@ jobs:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
+        # This will correctly sign the multi-arch manifest digest
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
