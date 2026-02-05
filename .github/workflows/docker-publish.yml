@@ -7,23 +7,59 @@ name: Docker
 
 on:
   schedule:
-    - cron: '41 4 * * *'
+    - cron: "41 4 * * *"
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    tags: ["v*.*.*"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
-
+  BASE_IMAGE: myoung34/github-runner:latest
 
 jobs:
+  check-base-image:
+    # Only run on schedule - skip for push/PR triggers
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+      - name: Get base image digest
+        id: base
+        run: |
+          DIGEST=$(docker manifest inspect ${{ env.BASE_IMAGE }} -v | jq -r '.[0].Descriptor.digest // .Descriptor.digest')
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+          echo "Base image digest: $DIGEST"
+
+      - name: Check cached digest
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: base-image-digest.txt
+          key: base-image-digest-${{ steps.base.outputs.digest }}
+
+      - name: Determine if build is needed
+        id: check
+        run: |
+          if [ "${{ steps.cache.outputs.cache-hit }}" == "true" ]; then
+            echo "Base image unchanged, skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "Base image changed, triggering build"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "${{ steps.base.outputs.digest }}" > base-image-digest.txt
+          fi
+
   build:
+    needs: [check-base-image]
+    # Run if: not scheduled, OR scheduled and base image changed
+    if: always() && (github.event_name != 'schedule' || needs.check-base-image.outputs.should_build == 'true')
 
     runs-on: ubuntu-latest
     permissions:
@@ -43,7 +79,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
         with:
-          cosign-release: 'v2.2.4'
+          cosign-release: "v2.2.4"
 
       # =======================================================
       # ⬇️ STEP 1: ADD THIS SECTION FOR QEMU ⬇️
