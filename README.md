@@ -21,4 +21,4 @@ docker run --rm rust-runner:latest bash -lc "rustc --version && cargo --version 
 
 ## Using in CI
 
-Use this image wherever you need a GitHub runner with Rust ready to go. Ensure the container has the required secrets and registration tokens as per the base image documentation.
+Use this image wherever you need a GitHub runner with Rust ready to go. Ensure the container has the required secrets and registration tokens as per the base image documentation, see https://github.com/myoung34/docker-github-actions-runner .
